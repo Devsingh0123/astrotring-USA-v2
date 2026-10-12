@@ -1,7 +1,21 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
-import { Menu, Sparkles, X, Orbit, Newspaper, Calculator, FileText, Coins, Megaphone } from "lucide-react"
+import { useDispatch, useSelector } from "react-redux"
+import {
+  Menu,
+  Sparkles,
+  X,
+  Orbit,
+  Newspaper,
+  Calculator,
+  FileText,
+  Coins,
+  Megaphone,
+  User,
+  LogOut,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { logout } from "@/store/slices/authSlice"
 
 const mobileNavLinks = [
   { label: "Horoscopes", path: "/horoscope", icon: Orbit },
@@ -14,6 +28,8 @@ const mobileNavLinks = [
 
 export default function MobileHeader({ onOpenBindModal }) {
   const [isOpen, setIsOpen] = useState(false)
+  const dispatch = useDispatch()
+  const { isAuthenticated, user } = useSelector((state) => state.auth || {})
 
   return (
     <>
@@ -37,14 +53,31 @@ export default function MobileHeader({ onOpenBindModal }) {
           </span>
         </Link>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onOpenBindModal(true)}
-          className="text-xs font-semibold text-mlh-plum-300 hover:text-white px-2.5 h-8"
-        >
-          Log in
-        </Button>
+        {isAuthenticated ? (
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+              Bound
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => dispatch(logout())}
+              className="text-mlh-muted hover:text-rose-400 w-8 h-8"
+              title="Log out"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onOpenBindModal(true)}
+            className="text-xs font-semibold text-mlh-plum-300 hover:text-white px-2.5 h-8"
+          >
+            Log in
+          </Button>
+        )}
       </header>
 
       {/* Mobile Slide-over Drawer */}
@@ -113,15 +146,36 @@ export default function MobileHeader({ onOpenBindModal }) {
             </div>
 
             <div className="pt-4 border-t border-[#252637]">
-              <Button
-                onClick={() => {
-                  setIsOpen(false)
-                  onOpenBindModal(true)
-                }}
-                className="w-full bg-mlh-plum hover:bg-mlh-plum-500 text-white text-xs py-2 rounded-xl"
-              >
-                Log in / Bind Chart
-              </Button>
+              {isAuthenticated ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-white/5 border border-white/10 text-xs">
+                    <User className="w-3.5 h-3.5 text-mlh-plum" />
+                    <span className="text-white truncate font-medium">
+                      +91 {user?.phone || "Verified User"}
+                    </span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsOpen(false)
+                      dispatch(logout())
+                    }}
+                    className="w-full border-rose-500/30 text-rose-300 hover:bg-rose-500/10 text-xs py-2 rounded-xl"
+                  >
+                    Log out
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  onClick={() => {
+                    setIsOpen(false)
+                    onOpenBindModal(true)
+                  }}
+                  className="w-full bg-mlh-plum hover:bg-mlh-plum-500 text-white text-xs py-2 rounded-xl"
+                >
+                  Log in / Bind Chart
+                </Button>
+              )}
             </div>
           </div>
         </div>

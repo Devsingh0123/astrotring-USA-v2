@@ -1,6 +1,8 @@
 import { createBrowserRouter } from "react-router-dom"
 import RootLayout from "@/components/layout/RootLayout"
 import HomePage from "@/pages/HomePage"
+import HoroscopesListingPage from "@/pages/HoroscopesListingPage"
+import DailyHoroscopePage from "@/pages/DailyHoroscopePage"
 import PlaceholderPage from "@/pages/PlaceholderPage"
 import NotFoundPage from "@/pages/NotFoundPage"
 
@@ -40,7 +42,27 @@ export const router = createBrowserRouter([
       },
       {
         path: "horoscope",
-        element: <PlaceholderPage title="Daily & Weekly Horoscopes" />,
+        element: <HoroscopesListingPage />,
+      },
+      {
+        path: "horoscopes",
+        element: <HoroscopesListingPage />,
+      },
+      {
+        path: "horoscopes/:sign/daily",
+        element: <DailyHoroscopePage />,
+      },
+      {
+        path: "horoscope/:sign/daily",
+        element: <DailyHoroscopePage />,
+      },
+      {
+        path: "horoscopes/:sign",
+        element: <DailyHoroscopePage />,
+      },
+      {
+        path: "horoscope/:sign",
+        element: <DailyHoroscopePage />,
       },
       {
         path: "compatibility",

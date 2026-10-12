@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Link, NavLink } from "react-router-dom"
+import { useDispatch, useSelector } from "react-redux"
 import {
   Sparkles,
   BookOpen,
@@ -12,8 +13,11 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   LogIn,
+  LogOut,
+  User,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { logout } from "@/store/slices/authSlice"
 
 const navItems = [
   { label: "Horoscopes", path: "/horoscope", icon: Orbit },
@@ -26,12 +30,13 @@ const navItems = [
 
 export default function Sidebar({ onOpenBindModal, isCollapsed, onToggleCollapse }) {
   const [activeFilter, setActiveFilter] = useState("ALL")
+  const dispatch = useDispatch()
+  const { isAuthenticated, user } = useSelector((state) => state.auth || {})
 
   return (
     <aside
-      className={`h-screen sticky top-0 bg-[#0c070a] border-r border-[#252637] flex flex-col justify-between transition-all duration-300 z-40 shrink-0 ${
-        isCollapsed ? "w-[72px]" : "w-[260px] lg:w-[280px]"
-      }`}
+      className={`h-screen sticky top-0 bg-[#0c070a] border-r border-[#252637] flex flex-col justify-between transition-all duration-300 z-40 shrink-0 ${isCollapsed ? "w-[72px]" : "w-[260px] lg:w-[280px]"
+        }`}
     >
       {/* Top Header & Navigation Rail */}
       <div className="flex flex-col h-full overflow-y-auto no-scrollbar p-3 space-y-4">
@@ -67,9 +72,8 @@ export default function Sidebar({ onOpenBindModal, isCollapsed, onToggleCollapse
         <div className="space-y-2 pt-1">
           <Link
             to="/chat?engine=vaani"
-            className={`w-full flex items-center gap-2.5 rounded-xl border border-mlh-plum-800 bg-[#1f0b18]/70 hover:bg-[#2b0e21] text-mlh-plum-100 transition-all font-medium text-xs lg:text-sm ${
-              isCollapsed ? "justify-center p-2.5" : "px-3.5 py-2.5"
-            }`}
+            className={`w-full flex items-center gap-2.5 rounded-xl border border-mlh-plum-800 bg-[#1f0b18]/70 hover:bg-[#2b0e21] text-mlh-plum-100 transition-all font-medium text-xs lg:text-sm ${isCollapsed ? "justify-center p-2.5" : "px-3.5 py-2.5"
+              }`}
           >
             <Sparkles className="w-4 h-4 text-mlh-plum-300 shrink-0" />
             {!isCollapsed && <span>Ask Vaani</span>}
@@ -77,9 +81,8 @@ export default function Sidebar({ onOpenBindModal, isCollapsed, onToggleCollapse
 
           <Link
             to="/chat?engine=astropedia"
-            className={`w-full flex items-center gap-2.5 rounded-xl border border-mlh-orrery/30 bg-[#1c1206]/70 hover:bg-[#261908] text-mlh-orrery-hi transition-all font-medium text-xs lg:text-sm ${
-              isCollapsed ? "justify-center p-2.5" : "px-3.5 py-2.5"
-            }`}
+            className={`w-full flex items-center gap-2.5 rounded-xl border border-mlh-orrery/30 bg-[#1c1206]/70 hover:bg-[#261908] text-mlh-orrery-hi transition-all font-medium text-xs lg:text-sm ${isCollapsed ? "justify-center p-2.5" : "px-3.5 py-2.5"
+              }`}
           >
             <BookOpen className="w-4 h-4 text-mlh-orrery shrink-0" />
             {!isCollapsed && <span>Ask Astropedia</span>}
@@ -95,12 +98,10 @@ export default function Sidebar({ onOpenBindModal, isCollapsed, onToggleCollapse
                 key={item.path}
                 to={item.path}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-lg text-xs lg:text-sm font-medium transition-colors ${
-                    isCollapsed ? "justify-center p-2.5" : "px-3 py-2"
-                  } ${
-                    isActive
-                      ? "text-white bg-white/10"
-                      : "text-mlh-muted hover:text-white hover:bg-white/5"
+                  `flex items-center gap-3 rounded-lg text-xs lg:text-sm font-medium transition-colors ${isCollapsed ? "justify-center p-2.5" : "px-3 py-2"
+                  } ${isActive
+                    ? "text-white bg-white/10"
+                    : "text-mlh-muted hover:text-white hover:bg-white/5"
                   }`
                 }
               >
@@ -119,11 +120,10 @@ export default function Sidebar({ onOpenBindModal, isCollapsed, onToggleCollapse
                 <button
                   key={filter}
                   onClick={() => setActiveFilter(filter)}
-                  className={`px-2 py-1 rounded transition-colors cursor-pointer ${
-                    activeFilter === filter
+                  className={`px-2 py-1 rounded transition-colors cursor-pointer ${activeFilter === filter
                       ? "bg-white/15 text-white font-semibold"
                       : "text-mlh-faint hover:text-mlh-muted"
-                  }`}
+                    }`}
                 >
                   {filter}
                 </button>
@@ -137,28 +137,63 @@ export default function Sidebar({ onOpenBindModal, isCollapsed, onToggleCollapse
         )}
       </div>
 
-      {/* Sticky Bottom Log In / Bind Chart Bar */}
+      {/* Sticky Bottom Log In / Bound Chart Bar */}
       <div className="p-3 border-t border-[#252637] bg-[#0c070a]">
-        <button
-          onClick={() => onOpenBindModal(true)}
-          className={`w-full flex items-center gap-3 rounded-xl p-2.5 hover:bg-white/5 transition-colors group cursor-pointer text-left ${
-            isCollapsed ? "justify-center" : ""
-          }`}
-        >
-          <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-mlh-plum-300 group-hover:text-white transition-colors shrink-0">
-            <LogIn className="w-4 h-4" />
-          </div>
-          {!isCollapsed && (
-            <div className="overflow-hidden">
-              <div className="text-sm font-bold text-white group-hover:text-mlh-plum-300 transition-colors">
-                Log in
+        {isAuthenticated ? (
+          <div
+            className={`w-full flex items-center justify-between rounded-xl p-2.5 bg-white/5 border border-white/10 ${
+              isCollapsed ? "justify-center" : ""
+            }`}
+          >
+            <div className="flex items-center gap-2.5 overflow-hidden">
+              <div className="w-8 h-8 rounded-lg bg-mlh-plum/20 border border-mlh-plum/40 flex items-center justify-center text-mlh-plum-200 shrink-0">
+                <User className="w-4 h-4" />
               </div>
-              <div className="text-[10px] font-mono text-mlh-plum-300/80 tracking-wider">
-                BIND YOUR CHART
-              </div>
+              {!isCollapsed && (
+                <div className="overflow-hidden">
+                  <div className="text-xs font-semibold text-white truncate">
+                    {user?.name || "Chart Bound"}
+                  </div>
+                  <div className="text-[10px] font-mono text-emerald-400">
+                    +91 {user?.phone || "VERIFIED"}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </button>
+
+            {!isCollapsed && (
+              <button
+                type="button"
+                onClick={() => dispatch(logout())}
+                title="Log out"
+                className="p-1.5 rounded-lg hover:bg-white/10 text-mlh-muted hover:text-rose-400 transition-colors cursor-pointer"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        ) : (
+          <button
+            onClick={() => onOpenBindModal(true)}
+            className={`w-full flex items-center gap-3 rounded-xl p-2.5 hover:bg-white/5 transition-colors group cursor-pointer text-left ${
+              isCollapsed ? "justify-center" : ""
+            }`}
+          >
+            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-mlh-plum-300 group-hover:text-white transition-colors shrink-0">
+              <LogIn className="w-4 h-4" />
+            </div>
+            {!isCollapsed && (
+              <div className="overflow-hidden">
+                <div className="text-sm font-bold text-white group-hover:text-mlh-plum-300 transition-colors">
+                  Log in
+                </div>
+                <div className="text-[10px] font-mono text-mlh-plum-300/80 tracking-wider">
+                  BIND YOUR CHART
+                </div>
+              </div>
+            )}
+          </button>
+        )}
       </div>
     </aside>
   )
