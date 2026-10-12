@@ -1,0 +1,20 @@
+import { Link } from "react-router-dom"
+import { Button } from "@/components/ui/button"
+import { Compass } from "lucide-react"
+
+export default function NotFoundPage() {
+  return (
+    <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-4 space-y-4">
+      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
+        <Compass className="w-6 h-6" />
+      </div>
+      <h1 className="text-3xl font-bold">404 - Cosmic Alignment Lost</h1>
+      <p className="text-sm text-muted-foreground max-w-sm">
+        The celestial coordinates you are looking for do not exist or have shifted across houses.
+      </p>
+      <Button asChild className="mt-2">
+        <Link to="/">Return to Home</Link>
+      </Button>
+    </div>
+  )
+}
