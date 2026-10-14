@@ -148,10 +148,10 @@ export default function MobileHeader({ onOpenBindModal }) {
             <div className="pt-4 border-t border-[#252637]">
               {isAuthenticated ? (
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 p-2 rounded-lg bg-white/5 border border-white/10 text-xs">
-                    <User className="w-3.5 h-3.5 text-mlh-plum" />
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-white/5 border border-white/10 text-xs overflow-hidden">
+                    <User className="w-3.5 h-3.5 text-mlh-plum shrink-0" />
                     <span className="text-white truncate font-medium">
-                      +91 {user?.phone || "Verified User"}
+                      {user?.email || user?.name || "Verified User"}
                     </span>
                   </div>
                   <Button

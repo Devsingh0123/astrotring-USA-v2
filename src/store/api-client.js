@@ -16,7 +16,9 @@ export const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     const token =
-      localStorage.getItem("token") || localStorage.getItem("astrotring_token");
+      localStorage.getItem("astrotring_auth_token") ||
+      localStorage.getItem("token") ||
+      localStorage.getItem("astrotring_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -39,8 +41,11 @@ apiClient.interceptors.response.use(
 
     if (status === 401) {
       // Clear expired auth session
+      localStorage.removeItem("astrotring_auth_token");
       localStorage.removeItem("token");
       localStorage.removeItem("astrotring_token");
+      localStorage.removeItem("astrotring_refresh_token");
+      localStorage.removeItem("astrotring_user");
 
       // Dispatch event for UI state or auth slice to trigger login modal
       window.dispatchEvent(new CustomEvent("astrotring:unauthorized"));

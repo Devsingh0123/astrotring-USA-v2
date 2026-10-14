@@ -152,10 +152,10 @@ export default function Sidebar({ onOpenBindModal, isCollapsed, onToggleCollapse
               {!isCollapsed && (
                 <div className="overflow-hidden">
                   <div className="text-xs font-semibold text-white truncate">
-                    {user?.name || "Chart Bound"}
+                    {user?.name || user?.email?.split("@")[0] || "Chart Bound"}
                   </div>
-                  <div className="text-[10px] font-mono text-emerald-400">
-                    +91 {user?.phone || "VERIFIED"}
+                  <div className="text-[10px] font-mono text-emerald-400 truncate max-w-[140px]">
+                    {user?.email || "VERIFIED"}
                   </div>
                 </div>
               )}

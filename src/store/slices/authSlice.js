@@ -2,9 +2,16 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
 import { apiClient } from "@/store/api-client"
 import { toast } from "sonner"
 
+const STORAGE_KEYS = {
+  ACCESS_TOKEN: "astrotring_auth_token",
+  LEGACY_TOKEN: "token",
+  REFRESH_TOKEN: "astrotring_refresh_token",
+  USER: "astrotring_user",
+}
+
 const getInitialUser = () => {
   try {
-    const raw = localStorage.getItem("astrotring_user")
+    const raw = localStorage.getItem(STORAGE_KEYS.USER)
     return raw ? JSON.parse(raw) : null
   } catch {
     return null
@@ -13,23 +20,37 @@ const getInitialUser = () => {
 
 const getInitialToken = () => {
   return (
-    localStorage.getItem("astrotring_auth_token") ||
-    localStorage.getItem("token") ||
+    localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) ||
+    localStorage.getItem(STORAGE_KEYS.LEGACY_TOKEN) ||
     localStorage.getItem("astrotring_token") ||
     null
   )
 }
 
+const getInitialRefreshToken = () => {
+  return localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN) || null
+}
+
 /**
- * Async Thunk: Send OTP to phone number
+ * Async Thunk: Send OTP to email address (Signup or Login)
+ * Endpoint: POST /api/v1/auth/send-otp
  */
 export const sendOtp = createAsyncThunk(
   "auth/sendOtp",
-  async ({ phone }, { rejectWithValue }) => {
+  async ({ email }, { rejectWithValue }) => {
     try {
-      const response = await apiClient.post("/auth/send-otp", { phone })
-      toast.success("Verification code sent to your phone.")
-      return response.data
+      const normalizedEmail = email.trim().toLowerCase()
+      const response = await apiClient.post("/auth/send-otp", { email: normalizedEmail })
+      const resData = response.data?.data || response.data
+      const message =
+        response.data?.message || "Verification code has been sent to your email."
+      toast.success(message)
+
+      return {
+        email: normalizedEmail,
+        isNewUser: Boolean(resData?.isNewUser),
+        cooldownSeconds: resData?.cooldownSeconds || 30,
+      }
     } catch (err) {
       // Offline fallback for preview simulation
       if (
@@ -37,11 +58,11 @@ export const sendOtp = createAsyncThunk(
         err.code === "ECONNABORTED" ||
         err.response?.status === 404
       ) {
-        toast.info("Test Mode: Verification code 123456 sent.")
+        toast.info("Test Mode: Verification code 123456 sent to email.")
         return {
-          phone,
-          otpSent: true,
-          message: "OTP sent successfully (Test Code: 123456)",
+          email: email.trim().toLowerCase(),
+          isNewUser: false,
+          cooldownSeconds: 30,
         }
       }
       const message =
@@ -54,24 +75,35 @@ export const sendOtp = createAsyncThunk(
 
 /**
  * Async Thunk: Verify OTP and establish authenticated session
+ * Endpoint: POST /api/v1/auth/verify-otp
  */
 export const verifyOtp = createAsyncThunk(
   "auth/verifyOtp",
-  async ({ phone, otp }, { rejectWithValue }) => {
+  async ({ email, otp }, { rejectWithValue }) => {
     try {
-      const response = await apiClient.post("/auth/verify-otp", { phone, otp })
-      const { token, user } = response.data
+      const normalizedEmail = email.trim().toLowerCase()
+      const response = await apiClient.post("/auth/verify-otp", {
+        email: normalizedEmail,
+        otp: otp.trim(),
+      })
+      const resData = response.data?.data || response.data
+      const accessToken = resData?.accessToken || response.data?.token
+      const refreshToken = resData?.refreshToken
+      const user = resData?.user
 
-      if (token) {
-        localStorage.setItem("astrotring_auth_token", token)
-        localStorage.setItem("token", token)
+      if (accessToken) {
+        localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken)
+        localStorage.setItem(STORAGE_KEYS.LEGACY_TOKEN, accessToken)
+      }
+      if (refreshToken) {
+        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken)
       }
       if (user) {
-        localStorage.setItem("astrotring_user", JSON.stringify(user))
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user))
       }
 
-      toast.success("Chart bound successfully! Welcome to AstroTring.")
-      return { token, user }
+      toast.success(response.data?.message || "Authentication successful! Welcome to AstroTring.")
+      return { accessToken, refreshToken, user }
     } catch (err) {
       // Mock / fallback authentication for local demonstration
       if (
@@ -82,25 +114,31 @@ export const verifyOtp = createAsyncThunk(
       ) {
         const mockUser = {
           id: "usr_" + Math.random().toString(36).substring(2, 9),
-          phone,
-          name: "Vedic Seeker",
-          moonSign: "Aries",
-          rashi: "Mesha",
+          email: email.trim().toLowerCase(),
+          role: "user",
+          isEmailVerified: true,
           chartBound: true,
           createdAt: new Date().toISOString(),
         }
-        const mockToken = "mock_jwt_token_" + Date.now()
+        const mockAccessToken = "mock_jwt_access_" + Date.now()
+        const mockRefreshToken = "mock_jwt_refresh_" + Date.now()
 
-        localStorage.setItem("astrotring_auth_token", mockToken)
-        localStorage.setItem("token", mockToken)
-        localStorage.setItem("astrotring_user", JSON.stringify(mockUser))
+        localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, mockAccessToken)
+        localStorage.setItem(STORAGE_KEYS.LEGACY_TOKEN, mockAccessToken)
+        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, mockRefreshToken)
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(mockUser))
 
-        toast.success("Chart bound successfully! Welcome to AstroTring.")
-        return { token: mockToken, user: mockUser }
+        toast.success("Authentication successful! Welcome to AstroTring.")
+        return {
+          accessToken: mockAccessToken,
+          refreshToken: mockRefreshToken,
+          user: mockUser,
+        }
       }
 
       const message =
-        err.response?.data?.message || "Invalid verification code. Please try again."
+        err.response?.data?.message ||
+        "Invalid or expired verification code. Please try again."
       toast.error(message)
       return rejectWithValue(message)
     }
@@ -108,24 +146,68 @@ export const verifyOtp = createAsyncThunk(
 )
 
 /**
- * Async Thunk: Logout authenticated user
+ * Async Thunk: Refresh Access Token
+ * Endpoint: POST /api/v1/auth/refresh-token
+ */
+export const refreshAccessToken = createAsyncThunk(
+  "auth/refreshAccessToken",
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const state = getState()
+      const refreshToken =
+        state.auth?.refreshToken ||
+        localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN)
+
+      if (!refreshToken) {
+        return rejectWithValue("No refresh token available")
+      }
+
+      const response = await apiClient.post("/auth/refresh-token", { refreshToken })
+      const resData = response.data?.data || response.data
+      const newAccessToken = resData?.accessToken
+
+      if (newAccessToken) {
+        localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, newAccessToken)
+        localStorage.setItem(STORAGE_KEYS.LEGACY_TOKEN, newAccessToken)
+        return { accessToken: newAccessToken }
+      }
+      return rejectWithValue("Invalid token refresh response")
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to refresh access token"
+      )
+    }
+  }
+)
+
+/**
+ * Async Thunk: Logout authenticated user & revoke refresh token
+ * Endpoint: POST /api/v1/auth/logout
  */
 export const logoutUser = createAsyncThunk(
   "auth/logoutUser",
-  async (_, { rejectWithValue }) => {
+  async (_, { getState, rejectWithValue }) => {
     try {
-      try {
-        await apiClient.post("/auth/logout")
-      } catch {
-        // Continue clearing local session even if server endpoint fails
+      const state = getState()
+      const refreshToken =
+        state.auth?.refreshToken ||
+        localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN)
+
+      if (refreshToken) {
+        try {
+          await apiClient.post("/auth/logout", { refreshToken })
+        } catch {
+          // Continue local cleanup even if server endpoint fails
+        }
       }
 
-      localStorage.removeItem("astrotring_auth_token")
-      localStorage.removeItem("token")
+      localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN)
+      localStorage.removeItem(STORAGE_KEYS.LEGACY_TOKEN)
       localStorage.removeItem("astrotring_token")
-      localStorage.removeItem("astrotring_user")
+      localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
+      localStorage.removeItem(STORAGE_KEYS.USER)
 
-      toast.info("Signed out of your chart.")
+      toast.info("Signed out of your account.")
       return true
     } catch (err) {
       return rejectWithValue(err.message || "Failed to logout")
@@ -134,20 +216,23 @@ export const logoutUser = createAsyncThunk(
 )
 
 /**
- * Async Thunk: Fetch profile of current user
+ * Async Thunk: Fetch profile of current user (Protected)
+ * Endpoint: GET /api/v1/auth/me
  */
 export const fetchUserProfile = createAsyncThunk(
   "auth/fetchUserProfile",
   async (_, { rejectWithValue }) => {
     try {
       const response = await apiClient.get("/auth/me")
-      const user = response.data?.user
+      const user = response.data?.data?.user || response.data?.user
       if (user) {
-        localStorage.setItem("astrotring_user", JSON.stringify(user))
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user))
       }
       return user
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "Failed to fetch profile")
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to fetch profile"
+      )
     }
   }
 )
@@ -155,10 +240,13 @@ export const fetchUserProfile = createAsyncThunk(
 const initialState = {
   user: getInitialUser(),
   token: getInitialToken(),
+  refreshToken: getInitialRefreshToken(),
   isAuthenticated: Boolean(getInitialToken()),
   isAuthModalOpen: false,
-  phone: "",
-  step: 1, // 1: Enter phone, 2: Enter OTP
+  email: "",
+  step: 1, // 1: Enter email, 2: Enter OTP
+  cooldownSeconds: 30,
+  isNewUser: false,
   loading: false,
   error: null,
 }
@@ -176,10 +264,10 @@ export const authSlice = createSlice({
       state.isAuthModalOpen = false
       state.error = null
       state.step = 1
-      state.phone = ""
+      state.email = ""
     },
-    setPhone: (state, action) => {
-      state.phone = action.payload
+    setEmail: (state, action) => {
+      state.email = action.payload
     },
     setStep: (state, action) => {
       state.step = action.payload
@@ -190,14 +278,17 @@ export const authSlice = createSlice({
     logout: (state) => {
       state.user = null
       state.token = null
+      state.refreshToken = null
       state.isAuthenticated = false
       state.isAuthModalOpen = false
       state.step = 1
-      state.phone = ""
-      localStorage.removeItem("astrotring_auth_token")
-      localStorage.removeItem("token")
+      state.email = ""
+      state.error = null
+      localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN)
+      localStorage.removeItem(STORAGE_KEYS.LEGACY_TOKEN)
       localStorage.removeItem("astrotring_token")
-      localStorage.removeItem("astrotring_user")
+      localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
+      localStorage.removeItem(STORAGE_KEYS.USER)
     },
   },
   extraReducers: (builder) => {
@@ -210,8 +301,14 @@ export const authSlice = createSlice({
       .addCase(sendOtp.fulfilled, (state, action) => {
         state.loading = false
         state.step = 2
-        if (action.payload?.phone) {
-          state.phone = action.payload.phone
+        if (action.payload?.email) {
+          state.email = action.payload.email
+        }
+        if (action.payload?.isNewUser !== undefined) {
+          state.isNewUser = action.payload.isNewUser
+        }
+        if (action.payload?.cooldownSeconds) {
+          state.cooldownSeconds = action.payload.cooldownSeconds
         }
       })
       .addCase(sendOtp.rejected, (state, action) => {
@@ -228,25 +325,39 @@ export const authSlice = createSlice({
       .addCase(verifyOtp.fulfilled, (state, action) => {
         state.loading = false
         state.isAuthenticated = true
-        state.token = action.payload.token
+        state.token = action.payload.accessToken
+        state.refreshToken = action.payload.refreshToken
         state.user = action.payload.user
         state.isAuthModalOpen = false
         state.step = 1
-        state.phone = ""
+        state.email = ""
       })
       .addCase(verifyOtp.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload || "Invalid code. Please try again."
       })
 
+    // Refresh Access Token
+    builder
+      .addCase(refreshAccessToken.fulfilled, (state, action) => {
+        state.token = action.payload.accessToken
+      })
+      .addCase(refreshAccessToken.rejected, (state) => {
+        state.user = null
+        state.token = null
+        state.refreshToken = null
+        state.isAuthenticated = false
+      })
+
     // Logout
     builder.addCase(logoutUser.fulfilled, (state) => {
       state.user = null
       state.token = null
+      state.refreshToken = null
       state.isAuthenticated = false
       state.isAuthModalOpen = false
       state.step = 1
-      state.phone = ""
+      state.email = ""
     })
 
     // Fetch User Profile
@@ -261,6 +372,7 @@ export const authSlice = createSlice({
         state.user = null
         state.isAuthenticated = false
         state.token = null
+        state.refreshToken = null
       })
   },
 })
@@ -268,7 +380,7 @@ export const authSlice = createSlice({
 export const {
   openAuthModal,
   closeAuthModal,
-  setPhone,
+  setEmail,
   setStep,
   clearError,
   logout,
