@@ -1,9 +1,11 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { useDispatch, useSelector } from "react-redux"
 import { motion } from "framer-motion"
 import { Sparkles, BookOpen, ArrowUp } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
+import { openAuthModal } from "@/store/slices/authSlice"
 
 const promptQuestions = [
   "What does my chart flag about my health?",
@@ -12,10 +14,35 @@ const promptQuestions = [
   "What is Saturn doing to my chart right now?",
 ]
 
-export default function HeroChatInput({ onOpenBindModal }) {
+export default function HeroChatInput({ onOpenBindModal, onOpenBuyModal }) {
   const [query, setQuery] = useState("")
   const [engine, setEngine] = useState("vaani") // 'vaani' | 'astropedia'
   const navigate = useNavigate()
+  const dispatch = useDispatch()
+  const { isAuthenticated } = useSelector((state) => state.auth || {})
+
+  const handleBuyQuestions = () => {
+    if (onOpenBuyModal) {
+      onOpenBuyModal()
+      return
+    }
+
+    const proceedWithBuy = () => {
+      navigate(`/chat?action=buy&engine=${engine}`)
+    }
+
+    if (isAuthenticated) {
+      // If logged in → skip the modal, proceed with the action directly
+      proceedWithBuy()
+    } else {
+      // If not logged in → only then open the login modal
+      if (typeof onOpenBindModal === "function") {
+        onOpenBindModal(proceedWithBuy)
+      } else {
+        dispatch(openAuthModal())
+      }
+    }
+  }
 
   const handleSend = () => {
     if (!query.trim()) return
@@ -96,7 +123,7 @@ export default function HeroChatInput({ onOpenBindModal }) {
           <div className="flex items-center justify-between sm:justify-end gap-3 self-end sm:self-auto w-full sm:w-auto">
             <button
               type="button"
-              onClick={() => onOpenBindModal(true)}
+              onClick={handleBuyQuestions}
               className="px-3.5 py-1.5 rounded-full bg-[#4d0e34] hover:bg-[#6b1449] border border-mlh-plum-400/25 text-[10.5px] font-mono font-semibold tracking-wider text-mlh-plum-100 transition-colors uppercase cursor-pointer"
             >
               BUY QUESTIONS

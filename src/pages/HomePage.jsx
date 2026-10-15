@@ -6,6 +6,7 @@ import Footer from "@/components/layout/Footer"
 export default function HomePage() {
   const context = useOutletContext() || {}
   const onOpenBindModal = context.onOpenBindModal || (() => {})
+  const onOpenBuyModal = context.onOpenBuyModal || (() => {})
 
   return (
     <div className="flex-1 flex flex-col justify-between relative min-h-screen">
@@ -15,7 +16,10 @@ export default function HomePage() {
         <ZodiacWheelBackground />
 
         {/* Hero Form & 4 Example Cards */}
-        <HeroChatInput onOpenBindModal={onOpenBindModal} />
+        <HeroChatInput
+          onOpenBindModal={onOpenBindModal}
+          onOpenBuyModal={onOpenBuyModal}
+        />
       </div>
 
       {/* Melooha Complete Footer */}

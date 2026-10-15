@@ -230,3 +230,13 @@
 .glow-amber {
   box-shadow: 0px 0px 20px 0px rgba(252, 153, 24, 0.35);
 }
+
+.mlh-cta-plum {
+  background: linear-gradient(160deg, #9a4578, #811756);
+  box-shadow: 0px 0px 26px 0px rgba(129, 23, 86, 0.42);
+}
+
+.mlh-cta-plum:hover {
+  background: linear-gradient(160deg, #aa4e85, #8f1a60);
+  box-shadow: 0px 0px 34px 0px rgba(129, 23, 86, 0.65);
+}

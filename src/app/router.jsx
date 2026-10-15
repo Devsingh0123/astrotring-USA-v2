@@ -3,6 +3,8 @@ import RootLayout from "@/components/layout/RootLayout"
 import HomePage from "@/pages/HomePage"
 import HoroscopesListingPage from "@/pages/HoroscopesListingPage"
 import DailyHoroscopePage from "@/pages/DailyHoroscopePage"
+import CalculatorsListingPage from "@/pages/CalculatorsListingPage"
+import FreeKundliPage from "@/pages/FreeKundliPage"
 import PlaceholderPage from "@/pages/PlaceholderPage"
 import NotFoundPage from "@/pages/NotFoundPage"
 
@@ -26,11 +28,19 @@ export const router = createBrowserRouter([
       },
       {
         path: "calculators",
-        element: <PlaceholderPage title="Vedic Calculators Suite" />,
+        element: <CalculatorsListingPage />,
+      },
+      {
+        path: "calculators/free-kundli-maker",
+        element: <FreeKundliPage />,
+      },
+      {
+        path: "calculators/kundli",
+        element: <FreeKundliPage />,
       },
       {
         path: "calculators/:toolName",
-        element: <PlaceholderPage title="Vedic Calculator" />,
+        element: <FreeKundliPage />,
       },
       {
         path: "reports",

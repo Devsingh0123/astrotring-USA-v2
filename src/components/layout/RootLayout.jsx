@@ -1,19 +1,40 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Outlet, ScrollRestoration } from "react-router-dom"
 import { useDispatch, useSelector } from "react-redux"
 import Sidebar from "@/components/layout/Sidebar"
 import MobileHeader from "@/components/layout/MobileHeader"
 import AuthModal from "@/features/auth/AuthModal"
+import QuestionPacksModal from "@/components/common/QuestionPacksModal"
 import { openAuthModal, closeAuthModal } from "@/store/slices/authSlice"
 
 export default function RootLayout() {
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isBuyModalOpen, setIsBuyModalOpen] = useState(false)
+  const pendingActionRef = useRef(null)
   const dispatch = useDispatch()
-  const { isAuthModalOpen } = useSelector((state) => state.auth || {})
+  const { isAuthenticated, isAuthModalOpen } = useSelector((state) => state.auth || {})
 
-  const handleOpenAuth = () => {
+  const handleOpenAuth = (actionCallback) => {
+    if (isAuthenticated) {
+      if (typeof actionCallback === "function") {
+        actionCallback()
+      }
+      return
+    }
+    if (typeof actionCallback === "function") {
+      pendingActionRef.current = actionCallback
+    }
     dispatch(openAuthModal())
   }
+
+  // When user completes login, execute any queued action
+  useEffect(() => {
+    if (isAuthenticated && pendingActionRef.current) {
+      const action = pendingActionRef.current
+      pendingActionRef.current = null
+      action()
+    }
+  }, [isAuthenticated])
 
   // Listen for global unauthorized session expiration
   useEffect(() => {
@@ -46,7 +67,13 @@ export default function RootLayout() {
 
         {/* Dynamic Page Outlet */}
         <main className="flex-1 flex flex-col relative">
-          <Outlet context={{ onOpenBindModal: handleOpenAuth, onOpenAuthModal: handleOpenAuth }} />
+          <Outlet
+            context={{
+              onOpenBindModal: handleOpenAuth,
+              onOpenAuthModal: handleOpenAuth,
+              onOpenBuyModal: () => setIsBuyModalOpen(true),
+            }}
+          />
         </main>
       </div>
 
@@ -54,6 +81,13 @@ export default function RootLayout() {
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => dispatch(closeAuthModal())}
+      />
+
+      {/* Global Question Packs 2-Step Purchase Modal */}
+      <QuestionPacksModal
+        isOpen={isBuyModalOpen}
+        onClose={() => setIsBuyModalOpen(false)}
+        onOpenAuth={handleOpenAuth}
       />
     </div>
   )

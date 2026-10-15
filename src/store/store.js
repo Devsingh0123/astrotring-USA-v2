@@ -1,6 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit"
 import authReducer from "@/store/slices/authSlice"
 import horoscopeReducer from "@/store/slices/horoscopeSlice"
+import calculatorReducer from "@/store/slices/calculatorSlice"
 
 /**
  * AstroTring Redux Store Configuration
@@ -17,11 +18,11 @@ export const store = configureStore({
     app: initialRootReducer,
     auth: authReducer,
     horoscope: horoscopeReducer,
+    calculators: calculatorReducer,
     // vaani: vaaniReducer,
     // user: userReducer,
     // reports: reportsReducer,
     // compatibility: compatibilityReducer,
-    // calculators: calculatorsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
