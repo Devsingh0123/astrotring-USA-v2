@@ -112,7 +112,7 @@ export default function MobileHeader({ onOpenBindModal }) {
               {/* Engine Links */}
               <div className="space-y-2">
                 <Link
-                  to="/chat?engine=vaani"
+                  to="/?engine=vaani"
                   onClick={() => setIsOpen(false)}
                   className="w-full flex items-center gap-2.5 rounded-xl border border-mlh-plum-800 bg-[#1f0b18] px-3.5 py-2.5 text-mlh-plum-100 text-xs font-medium"
                 >
@@ -120,7 +120,7 @@ export default function MobileHeader({ onOpenBindModal }) {
                   <span>Ask Vaani</span>
                 </Link>
                 <Link
-                  to="/chat?engine=astropedia"
+                  to="/?engine=astropedia"
                   onClick={() => setIsOpen(false)}
                   className="w-full flex items-center gap-2.5 rounded-xl border border-mlh-orrery/30 bg-[#1c1206] px-3.5 py-2.5 text-mlh-orrery-hi text-xs font-medium"
                 >

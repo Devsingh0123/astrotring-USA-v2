@@ -71,7 +71,7 @@ export default function Sidebar({ onOpenBindModal, isCollapsed, onToggleCollapse
         {/* Engine Quick Action Pills */}
         <div className="space-y-2 pt-1">
           <Link
-            to="/chat?engine=vaani"
+            to="/?engine=vaani"
             className={`w-full flex items-center gap-2.5 rounded-xl border border-mlh-plum-800 bg-[#1f0b18]/70 hover:bg-[#2b0e21] text-mlh-plum-100 transition-all font-medium text-xs lg:text-sm ${isCollapsed ? "justify-center p-2.5" : "px-3.5 py-2.5"
               }`}
           >
@@ -80,7 +80,7 @@ export default function Sidebar({ onOpenBindModal, isCollapsed, onToggleCollapse
           </Link>
 
           <Link
-            to="/chat?engine=astropedia"
+            to="/?engine=astropedia"
             className={`w-full flex items-center gap-2.5 rounded-xl border border-mlh-orrery/30 bg-[#1c1206]/70 hover:bg-[#261908] text-mlh-orrery-hi transition-all font-medium text-xs lg:text-sm ${isCollapsed ? "justify-center p-2.5" : "px-3.5 py-2.5"
               }`}
           >

@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { useDispatch, useSelector } from "react-redux"
 import { motion } from "framer-motion"
 import { Sparkles, BookOpen, ArrowUp } from "lucide-react"
@@ -15,11 +15,28 @@ const promptQuestions = [
 ]
 
 export default function HeroChatInput({ onOpenBindModal, onOpenBuyModal }) {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const engineParam = searchParams.get("engine")
+
   const [query, setQuery] = useState("")
-  const [engine, setEngine] = useState("vaani") // 'vaani' | 'astropedia'
+  const [engine, setEngine] = useState(
+    engineParam === "astropedia" ? "astropedia" : "vaani"
+  )
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const { isAuthenticated } = useSelector((state) => state.auth || {})
+
+  // Keep engine state in sync if URL query param changes
+  useEffect(() => {
+    if (engineParam === "astropedia" || engineParam === "vaani") {
+      setEngine(engineParam)
+    }
+  }, [engineParam])
+
+  const handleSelectEngine = (newEngine) => {
+    setEngine(newEngine)
+    setSearchParams({ engine: newEngine })
+  }
 
   const handleBuyQuestions = () => {
     if (onOpenBuyModal) {
@@ -95,7 +112,7 @@ export default function HeroChatInput({ onOpenBindModal, onOpenBuyModal }) {
           <div className="inline-flex items-center rounded-full border border-[#2e3045] bg-[#0c070a] p-1 self-start sm:self-auto">
             <button
               type="button"
-              onClick={() => setEngine("vaani")}
+              onClick={() => handleSelectEngine("vaani")}
               className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
                 engine === "vaani"
                   ? "bg-gradient-to-r from-mlh-plum-500 to-mlh-plum text-white shadow-xs"
@@ -107,7 +124,7 @@ export default function HeroChatInput({ onOpenBindModal, onOpenBuyModal }) {
             </button>
             <button
               type="button"
-              onClick={() => setEngine("astropedia")}
+              onClick={() => handleSelectEngine("astropedia")}
               className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
                 engine === "astropedia"
                   ? "bg-mlh-iris text-white shadow-xs"
